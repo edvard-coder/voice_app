@@ -30,16 +30,23 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
 
-    - name: Build executable
+    - name: Build executable (Windows)
+      if: matrix.os == 'windows-latest'
       run: |
-        pyinstaller --onefile --windowed --name "VoiceManager" src/voice_manager/main.py
+        python -m PyInstaller --onefile --windowed --name "VoiceManager" src/voice_manager/__main__.py
+      shell: bash
+
+    - name: Build executable (Linux/Mac)
+      if: matrix.os != 'windows-latest'
+      run: |
+        python -m PyInstaller --onefile --windowed --name "VoiceManager" src/voice_manager/__main__.py
       shell: bash
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
         name: VoiceManager-${{ matrix.os }}
-        path: dist/VoiceManager.*
+        path: dist/VoiceManager*
 
   release:
     needs: build
@@ -51,11 +58,12 @@ jobs:
 
     - name: Download all artifacts
       uses: actions/download-artifact@v3
+      with:
+        path: release_artifacts
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        files: |
-          VoiceManager-windows-latest/VoiceManager.exe
-          VoiceManager-ubuntu-latest/VoiceManager
-          VoiceManager-macos-latest/VoiceManager
+        files: release_artifacts/**
+        draft: false
+        prerelease: false

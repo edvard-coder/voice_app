@@ -184,11 +184,6 @@ class STTVosk:
         """Stop the listening process"""
         self.is_listening = False
 
-        if 'text' in final_dict:
-            result += final_dict['text']
-            
-        return result.strip()
-
 
 # For testing purposes
 if __name__ == "__main__":
