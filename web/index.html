@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Manager Web</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .mic-button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 20px 40px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 24px;
+            margin: 20px 2px;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+            transition: background-color 0.3s;
+        }
+        
+        .mic-button:hover {
+            background-color: #45a049;
+        }
+        
+        .mic-button.recording {
+            background-color: #f44336;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .status {
+            margin: 20px 0;
+            font-size: 18px;
+            color: #666;
+        }
+        
+        #result {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-size: 16px;
+            resize: vertical;
+        }
+        
+        .copy-button {
+            background-color: #2196F3;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        .copy-button:hover {
+            background-color: #1976D2;
+        }
+        
+        .language-selector {
+            margin: 20px 0;
+        }
+        
+        select {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Voice Manager Web</h1>
+        
+        <div class="language-selector">
+            <label for="language">Язык распознавания:</label>
+            <select id="language">
+                <option value="ru-RU">Русский</option>
+                <option value="en-US">English</option>
+                <option value="auto">Авто</option>
+            </select>
+        </div>
+        
+        <div>
+            <button class="mic-button" id="micButton">🎤</button>
+        </div>
+        
+        <div class="status" id="status">Готов к записи</div>
+        
+        <textarea id="result" placeholder="Распознанный текст появится здесь..."></textarea>
+        
+        <div>
+            <button class="copy-button" id="copyButton">📋 Копировать</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const micButton = document.getElementById('micButton');
+            const resultTextarea = document.getElementById('result');
+            const statusDiv = document.getElementById('status');
+            const copyButton = document.getElementById('copyButton');
+            const languageSelect = document.getElementById('language');
+            
+            let recognition;
+            let isRecording = false;
+            
+            // Check if browser supports speech recognition
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.lang = 'ru-RU'; // Default language
+                
+                recognition.onstart = function() {
+                    isRecording = true;
+                    micButton.classList.add('recording');
+                    statusDiv.textContent = 'Запись...';
+                };
+                
+                recognition.onend = function() {
+                    isRecording = false;
+                    micButton.classList.remove('recording');
+                    statusDiv.textContent = 'Запись остановлена';
+                };
+                
+                recognition.onresult = function(event) {
+                    let interimTranscript = '';
+                    let finalTranscript = '';
+                    
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript + ' ';
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+                    
+                    resultTextarea.value = finalTranscript + interimTranscript;
+                };
+                
+                recognition.onerror = function(event) {
+                    console.error('Speech recognition error', event.error);
+                    statusDiv.textContent = 'Ошибка: ' + event.error;
+                    recognition.stop();
+                    isRecording = false;
+                    micButton.classList.remove('recording');
+                };
+            } else {
+                statusDiv.textContent = 'Ваш браузер не поддерживает распознавание речи';
+                micButton.disabled = true;
+            }
+            
+            // Toggle recording
+            micButton.addEventListener('click', function() {
+                if (!isRecording) {
+                    // Update language
+                    recognition.lang = languageSelect.value === 'auto' ? 'ru-RU' : languageSelect.value;
+                    
+                    recognition.start();
+                    statusDiv.textContent = 'Подготовка к записи...';
+                } else {
+                    recognition.stop();
+                }
+            });
+            
+            // Copy to clipboard
+            copyButton.addEventListener('click', function() {
+                if (resultTextarea.value) {
+                    resultTextarea.select();
+                    document.execCommand('copy');
+                    statusDiv.textContent = 'Текст скопирован в буфер обмена!';
+                    
+                    setTimeout(() => {
+                        statusDiv.textContent = isRecording ? 'Запись...' : 'Готов к записи';
+                    }, 2000);
+                } else {
+                    statusDiv.textContent = 'Нет текста для копирования';
+                }
+            });
+            
+            // Update language when selection changes
+            languageSelect.addEventListener('change', function() {
+                if (isRecording) {
+                    recognition.stop();
+                    recognition.lang = this.value === 'auto' ? 'ru-RU' : this.value;
+                    recognition.start();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
