@@ -11,13 +11,17 @@ def build_executable():
         '--name=VoiceManager',
         '--windowed',  # Remove this if you want console window
         '--onefile',
-        '--add-data=src/voice_manager;voice_manager',
+        '--add-data=src/voice_manager:voice_manager',
         '--hidden-import=vosk',
         '--hidden-import=pyaudio',
         '--hidden-import=keyboard',
         '--hidden-import=pynput',
         '--hidden-import=pyautogui',
         '--hidden-import=pyperclip',
+        '--hidden-import=tkinter',
+        '--hidden-import=json',
+        '--hidden-import=requests',
+        '--hidden-import=urllib',
         'src/voice_manager/__main__.py'
     ]
     
